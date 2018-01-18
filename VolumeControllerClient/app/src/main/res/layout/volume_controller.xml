@@ -12,7 +12,7 @@
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        app:cardBackgroundColor="@color/colorPrimary">
+        app:cardBackgroundColor="@color/cardview_light_background">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -34,9 +34,8 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_weight="0"
-                    android:backgroundTint="@android:color/transparent"
+                    android:backgroundTint="@color/cardview_light_background"
                     android:contentDescription="toggle mute @android:string/paste_as_plain_text"
-                    android:tint="@color/cardview_light_background"
                     app:srcCompat="@drawable/ic_volume_up_black_24px" />
 
                 <TextView
@@ -47,6 +46,7 @@
                     android:layout_weight="0"
                     android:text="TextView"
                     android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                    android:textColor="@color/cardview_dark_background"
                     android:textSize="24sp"
                     tools:text="Master Volume" />
 
