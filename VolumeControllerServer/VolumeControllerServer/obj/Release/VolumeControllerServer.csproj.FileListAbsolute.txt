@@ -1,0 +1,8 @@
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\bin\Release\VolumeControllerServer.exe.config
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\bin\Release\VolumeControllerServer.exe
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\bin\Release\VolumeControllerServer.pdb
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Release\Interop.NetFwTypeLib.dll
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Release\VolumeControllerServer.csproj.ResolveComReference.cache
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Release\VolumeControllerServer.csproj.CoreCompileInputs.cache
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Release\VolumeControllerServer.exe
+C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Release\VolumeControllerServer.pdb
