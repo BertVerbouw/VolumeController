@@ -120,11 +120,13 @@ namespace VolumeControllerServer
 
             List<INetFwRule> RuleList = new List<INetFwRule>();
 
+            var currentProfiles = fwPolicy2.CurrentProfileTypes;
+
             foreach (INetFwRule rule in fwPolicy2.Rules)
             {
                 if (rule.Name.IndexOf(_firewallRule) != -1)
                 {
-                    if (rule.LocalPorts == _port)
+                    if (rule.LocalPorts == _port && rule.Profiles == currentProfiles)
                     {
                         rule.Enabled = true;
                         return;
@@ -132,7 +134,6 @@ namespace VolumeControllerServer
                 }
             }
             
-            var currentProfiles = fwPolicy2.CurrentProfileTypes;
             // Let's create a new rule
             INetFwRule2 inboundRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
             inboundRule.Enabled = true;
@@ -180,7 +181,7 @@ namespace VolumeControllerServer
                         {
                             info.Add(new AudioInfo()
                             {
-                                Name = session.Process.ProcessName.First().ToString().ToUpper() + session.Process.ProcessName.ToLower().Substring(1),
+                                Name = session.Process.ProcessName.First().ToString().ToUpper() + session.Process.ProcessName.Substring(1),
                                 Pid = session.ProcessId,
                                 Volume = AudioUtilities.GetApplicationVolume(session.ProcessId),
                                 IsMuted = AudioUtilities.GetApplicationMute(session.ProcessId)

@@ -7,3 +7,12 @@ C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\Volu
 C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.pdb
 C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\Interop.NetFwTypeLib.dll
 C:\Users\Bert\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.csproj.ResolveComReference.cache
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\bin\Debug\VolumeControllerServer.exe.config
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\bin\Debug\VolumeControllerServer.exe
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\bin\Debug\VolumeControllerServer.pdb
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.csprojResolveAssemblyReference.cache
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\Interop.NetFwTypeLib.dll
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.csproj.ResolveComReference.cache
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.csproj.CoreCompileInputs.cache
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.exe
+C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerServer\VolumeControllerServer\obj\Debug\VolumeControllerServer.pdb

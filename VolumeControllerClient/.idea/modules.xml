@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerClient\Android.iml" filepath="C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerClient\Android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/VolumeControllerClient.iml" filepath="$PROJECT_DIR$/VolumeControllerClient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerClient\app\app.iml" filepath="C:\Users\Bert Verbouw\Documents\Development\VolumeController\VolumeControllerClient\app\app.iml" />
+    </modules>
+  </component>
+</project>

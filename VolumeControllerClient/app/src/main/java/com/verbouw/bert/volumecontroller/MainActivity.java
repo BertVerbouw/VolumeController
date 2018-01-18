@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         preferences = getSharedPreferences("label", 0);
         String ip = preferences.getString("ipAddress", "");
-        String port = preferences.getString("port", "");
+        String port = preferences.getString("port", "8081");
         Variables.ipAddress = ip;
         Variables.port = port;
         ipTextBox.setText(ip);
