@@ -12,21 +12,20 @@ using System.Reflection;
 using System.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Principal;
+using System.ComponentModel;
 
 namespace VolumeControllerServer
 {
     class Program
     {
         private static string _firewallRule = "VolumeController";
-        private static string _port = "8081";
+        private static int _port = 11000;
         private static string _currentIp = "";
-        private static Dictionary<string, Func<HttpListenerRequest, string>> _apiMethods = new Dictionary<string, Func<HttpListenerRequest, string>>()
-        {
-            { "/get/" , SendAllVolumeData },
-            { "/set/" , ProcessVolumeRequest },
-            { "/mute/" , ProcessMuteRequest }
-        };
-        private static List<WebServer> _webservers = new List<WebServer>();
+        private static BackgroundWorker _volumeChecker = new BackgroundWorker();
+        private static string _lastvolumedata = "";
 
         static void Main(string[] args)
         {
@@ -36,19 +35,12 @@ namespace VolumeControllerServer
                 {
                     if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                     {
-                        _currentIp = GetLocalIPAddress();
-                        AddFirewallRule();
-                        foreach (var apifunction in _apiMethods)
-                        {
-                            WebServer ws = new WebServer(apifunction.Value, "http://" + _currentIp + ":" + _port + apifunction.Key);
-                            _webservers.Add(ws);
-                            ws.Run();
-                        }
+                        _currentIp = GetLocalIPAddress().ToString();
+                        //AddFirewallRule();
                         InitializeNotifyIcon();
-                        while (true)
-                        {
-                            Thread.Sleep(100);
-                        }
+                        _volumeChecker.DoWork += _volumeChecker_DoWork;
+                        _volumeChecker.RunWorkerAsync();
+                        AsynchronousSocketListener.StartListening(_currentIp, _port);
                     }
                     else
                     {
@@ -70,35 +62,7 @@ namespace VolumeControllerServer
                     MessageBox.Show(e.ToString(), "Volume Controller Server");
                 }
             }
-        }
-
-        private static void InitializeNotifyIcon()
-        {
-            Thread notifyThread = new Thread(
-            delegate ()
-            {
-                NotifyIcon tray = new NotifyIcon
-                {
-                    Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
-                    Visible = true,
-                    Text = "Ip address: " + _currentIp + Environment.NewLine + "Port: " + _port,
-                    ContextMenu = new ContextMenu(new MenuItem[] { new MenuItem("Shutdown Server", ExitApplication) })
-                };
-                tray.ShowBalloonTip(2000, "Volume Controller Server Running", "The server is running in the background, right click the icon to shut down", ToolTipIcon.Info);
-                System.Windows.Forms.Application.Run();
-            });
-            notifyThread.Start();
-
-        }
-
-        private static void ExitApplication(object sender, EventArgs e)
-        {
-            foreach(WebServer server in _webservers)
-            {
-                server.Stop();
-            }
-            Environment.Exit(0);
-        }
+        }        
 
         public static string GetLocalIPAddress()
         {
@@ -111,6 +75,38 @@ namespace VolumeControllerServer
                 }
             }
             throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
+
+        private static void _volumeChecker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            while (true)
+            {
+                string newdata = GetAllVolumeData();
+                if (newdata != _lastvolumedata)
+                {
+                    AsynchronousSocketListener.Send(newdata);
+                }
+                Thread.Sleep(50);
+            }
+        }
+
+        private static void InitializeNotifyIcon()
+        {
+            Thread notifyThread = new Thread(
+            delegate ()
+            {
+                string text = "Ip address: " + _currentIp + Environment.NewLine + "Port: " + _port;
+                NotifyIcon tray = new NotifyIcon
+                {
+                    Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
+                    Visible = true,
+                    Text = text
+                };
+                tray.ShowBalloonTip(2000, "Volume Controller Server Running", "The server is running: "+Environment.NewLine+text, ToolTipIcon.Info);
+                System.Windows.Forms.Application.Run();
+            });
+            notifyThread.Start();
+
         }
 
         private static void AddFirewallRule()
@@ -126,7 +122,7 @@ namespace VolumeControllerServer
             {
                 if (rule.Name.IndexOf(_firewallRule) != -1)
                 {
-                    if (rule.LocalPorts == _port && rule.Profiles == currentProfiles)
+                    if (rule.LocalPorts == _port.ToString() && rule.Profiles == currentProfiles)
                     {
                         rule.Enabled = true;
                         return;
@@ -141,8 +137,7 @@ namespace VolumeControllerServer
             inboundRule.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
             //Using protocol TCP
             inboundRule.Protocol = 6; // TCP
-                                      //Port 81
-            inboundRule.LocalPorts = _port;
+            inboundRule.LocalPorts = _port.ToString();
             //Name of rule
             inboundRule.Name = _firewallRule;
             // ...//
@@ -153,7 +148,24 @@ namespace VolumeControllerServer
             firewallPolicy.Rules.Add(inboundRule);
         }
 
-        public static string SendAllVolumeData(HttpListenerRequest request)
+        internal static void ProcessRequest(string content)
+        {
+            try
+            {
+                string[] contentarr = content.Split('*');
+                if(contentarr[0] == "mute")
+                {
+                    ProcessMuteRequest(Int32.Parse(contentarr[1]), Boolean.Parse(contentarr[2]));
+                }
+                else if(contentarr[1] == "vol")
+                {
+                    ProcessVolumeRequest(Int32.Parse(contentarr[1]), float.Parse(contentarr[2]));
+                }
+            }
+            catch { }
+        }
+
+        public static string GetAllVolumeData()
         {
             List<AudioInfo> info = new List<AudioInfo>();
             try
@@ -197,69 +209,47 @@ namespace VolumeControllerServer
             return JsonConvert.SerializeObject(info.Distinct());
         }
 
-        public static string ProcessVolumeRequest(HttpListenerRequest request)
+        public static void ProcessVolumeRequest(int pid, float volume)
         {
-            string pid = request.QueryString["pid"];
-            string volume = request.QueryString["vol"];
-            if (pid != null && volume != null)
-            {
                 try
                 {
-                    if (pid == "-1")
+                    if (pid == -1)
                     {
-                        AudioUtilities.SetMasterVolume(float.Parse(volume));
+                        AudioUtilities.SetMasterVolume(volume);
                     }
-                    else if(pid == "-2")
+                    else if(pid ==-2)
                     {
-                        AudioUtilities.SetSystemSoundsVolume(float.Parse(volume));
+                        AudioUtilities.SetSystemSoundsVolume(volume);
                     }
                     else
                     {
-                        AudioUtilities.SetApplicationVolume(Int32.Parse(pid), float.Parse(volume));
+                        AudioUtilities.SetApplicationVolume(pid, volume);
                     }
-                    return string.Format("<HTML><BODY>OK</BODY></HTML>");
                 } catch
                 {
-                    return string.Format("<HTML><BODY>Failed to set volume to "+volume+" for pid "+pid+"</BODY></HTML>");
                 }
-            }
-            else
-            {
-                return string.Format("<HTML><BODY>Parameters incorrect</BODY></HTML>");
-            }
         }
 
-        public static string ProcessMuteRequest(HttpListenerRequest request)
+        public static void ProcessMuteRequest(int pid, bool mute)
         {
-            string pid = request.QueryString["pid"];
-            string mute = request.QueryString["mute"];
-            if (pid != null && mute != null)
-            {
                 try
                 {
-                    if (pid == "-1")
+                    if (pid ==-1)
                     {
-                        AudioUtilities.SetMasterVolumeMute(bool.Parse(mute));
+                        AudioUtilities.SetMasterVolumeMute(mute);
                     }
-                    else if (pid == "-2")
+                    else if (pid == -2)
                     {
-                        AudioUtilities.SetSystemSoundsMute(bool.Parse(mute));
+                        AudioUtilities.SetSystemSoundsMute(mute);
                     }
                     else
                     {
-                        AudioUtilities.SetApplicationMute(Int32.Parse(pid), bool.Parse(mute));
+                        AudioUtilities.SetApplicationMute(pid, mute);
                     }
-                    return string.Format("<HTML><BODY>OK</BODY></HTML>");
                 }
                 catch
                 {
-                    return string.Format("<HTML><BODY>Failed to mute pid " + pid + "</BODY></HTML>");
                 }
-            }
-            else
-            {
-                return string.Format("<HTML><BODY>Parameters incorrect</BODY></HTML>");
-            }
         }
     }
 }

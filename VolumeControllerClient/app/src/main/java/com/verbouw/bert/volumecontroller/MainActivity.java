@@ -1,15 +1,18 @@
 package com.verbouw.bert.volumecontroller;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Handler;
-import android.os.Parcelable;
-import android.support.design.widget.Snackbar;
-import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -21,25 +24,23 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
     private LinearLayout volumeControllerContainer;
     private ScrollView scrollView;
     private LinearLayout inputLayout;
+    private LinearLayout splashLayout;
     private EditText ipTextBox;
-    private EditText portTextBox;
-    private int interval = 250;
-    private Handler handler;
     private SharedPreferences preferences;
+    TcpClient mTcpClient;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,17 +48,14 @@ public class MainActivity extends AppCompatActivity {
         volumeControllerContainer = this.findViewById(R.id.vcContainer);
         scrollView = this.findViewById(R.id.scrollViewer);
         ipTextBox = this.findViewById(R.id.ipaddress);
-        portTextBox = this.findViewById(R.id.port);
         inputLayout = this.findViewById(R.id.inputLayout);
-        handler = new Handler();
+        splashLayout = this.findViewById(R.id.LoadingScreen);
 
         preferences = getSharedPreferences("label", 0);
         String ip = preferences.getString("ipAddress", "");
-        String port = preferences.getString("port", "8081");
         Variables.ipAddress = ip;
-        Variables.port = port;
         ipTextBox.setText(ip);
-        portTextBox.setText(port);
+        new ConnectTask().execute("");
     }
 
     private void loadVolumeControllers(JSONArray data) {
@@ -126,65 +124,13 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    @Override
-    protected void onResume(){
-        super.onResume();
-        apiLoop.run();
-    }
-
-    @Override
-    public void onStop(){
-        super.onStop();
-        handler.removeCallbacks(apiLoop);
-    }
-
-    Runnable apiLoop = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                getApiData(); //this function can change value of interval.
-            } finally {
-                // 100% guarantee that this always happens, even if
-                // your update method throws an exception
-                handler.postDelayed(apiLoop, interval);
-            }
-        }
-    };
-
-    private void getApiData() {
-        // Instantiate the RequestQueue.
-        RequestQueue queue = Volley.newRequestQueue(this);
-        String url ="http://"+Variables.ipAddress+":"+Variables.port+"/get/";
-
-        // Request a string response from the provided URL.
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null,
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        inputLayout.setVisibility(View.INVISIBLE);
-                        scrollView.setVisibility(View.VISIBLE);
-                        loadVolumeControllers(response);
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                handler.removeCallbacks(apiLoop);
-                volumeControllerContainer.removeAllViews();
-                scrollView.setVisibility(View.INVISIBLE);
-                inputLayout.setVisibility(View.VISIBLE);
-            }
-        });
-        // Add the request to the RequestQueue.
-        queue.add(jsonArrayRequest);
-    }
-
     public void retryButtonClick(View view) {
+        splashLayout.setVisibility(View.VISIBLE);
         hideKeyboard(this);
         Variables.ipAddress = ipTextBox.getText().toString();
-        Variables.port = portTextBox.getText().toString();
         preferences.edit().putString("ipAddress", Variables.ipAddress).commit();
-        preferences.edit().putString("port", Variables.port).commit();
-        apiLoop.run();
+        //sends the message to the server
+        new ConnectTask().execute("");
     }
 
     public static void hideKeyboard(Activity activity) {
@@ -197,4 +143,74 @@ public class MainActivity extends AppCompatActivity {
         }
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
+
+    public void setMute(int pid, boolean isMuted){
+        new SendOperation().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,"mute*"+pid+"*"+isMuted);
+    }
+
+
+    public void setVolume(int pid, int volume){
+        new SendOperation().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,"vol*"+pid+"*"+volume);
+    }
+
+    private class SendOperation extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... params) {
+            if(mTcpClient != null) {
+                mTcpClient.sendMessage(params[0]);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+        }
+
+        @Override
+        protected void onPreExecute() {
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+        }
+    }
+
+    private class ConnectTask extends AsyncTask<String, String, TcpClient> {
+
+        @Override
+        protected TcpClient doInBackground(String... message) {
+
+            //we create a TCPClient object
+            mTcpClient = new TcpClient(new TcpClient.OnMessageReceived() {
+                @Override
+                //here the messageReceived method is implemented
+                public void messageReceived(String message) {
+                    //this method calls the onProgressUpdate
+                    publishProgress(message);
+                }
+            });
+            mTcpClient.run();
+            scrollView.setVisibility(View.INVISIBLE);
+            inputLayout.setVisibility(View.VISIBLE);
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            super.onProgressUpdate(values);
+            //response received from server
+            try {
+                loadVolumeControllers(new JSONArray(values[0]));
+                scrollView.setVisibility(View.VISIBLE);
+                inputLayout.setVisibility(View.INVISIBLE);
+                splashLayout.setVisibility(View.INVISIBLE);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            //process server response here....
+
+        }
+    }
 }
+
+

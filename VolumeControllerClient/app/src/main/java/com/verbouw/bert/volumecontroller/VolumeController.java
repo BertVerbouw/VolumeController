@@ -35,7 +35,7 @@ public class VolumeController extends LinearLayout {
     private int volume;
     private String name;
     private int pid;
-    private RequestQueue queue;
+    private Context context;
 
     public VolumeController(Context context, boolean isMuted, int volume, String name, int pid) {
         super(context);
@@ -43,8 +43,8 @@ public class VolumeController extends LinearLayout {
         this.volume = volume;
         this.name = name;
         this.pid = pid;
+        this.context = context;
         initializeViews(context);
-        this.queue = Volley.newRequestQueue(context);
     }
 
     /**
@@ -90,47 +90,11 @@ public class VolumeController extends LinearLayout {
     };
 
     private void setVolumeApi() {
-        if(queue != null) {
-            // Instantiate the RequestQueue.
-            String url = "http://"+Variables.ipAddress+":"+Variables.port+"/set?pid=" + pid + "&vol=" + volume;
-
-            // Request a string response from the provided URL.
-            JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null,
-                    new Response.Listener<JSONArray>() {
-                        @Override
-                        public void onResponse(JSONArray response) {
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-
-                }
-            });
-            // Add the request to the RequestQueue.
-            queue.add(jsonArrayRequest);
-        }
+        ((MainActivity)context).setVolume(pid, volume);
     }
 
     private void setMuteApi() {
-        if(queue != null) {
-            // Instantiate the RequestQueue.
-            String url = "http://"+Variables.ipAddress+":"+Variables.port+"/mute?pid=" + pid + "&mute=" + isMuted;
-
-            // Request a string response from the provided URL.
-            JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null,
-                    new Response.Listener<JSONArray>() {
-                        @Override
-                        public void onResponse(JSONArray response) {
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-
-                }
-            });
-            // Add the request to the RequestQueue.
-            queue.add(jsonArrayRequest);
-        }
+        ((MainActivity)context).setMute(pid, isMuted);
     }
 
     private OnClickListener MuteButtonListener = new OnClickListener() {
@@ -143,9 +107,9 @@ public class VolumeController extends LinearLayout {
     };
 
     public void initializeValues() {
-        muteButton = (ImageButton)this.findViewById(R.id.muteButton);
-        nameView = (TextView)this.findViewById(R.id.nameView);
-        seekBar = (SeekBar)this.findViewById(R.id.seekBar);
+        muteButton = this.findViewById(R.id.muteButton);
+        nameView = this.findViewById(R.id.nameView);
+        seekBar = this.findViewById(R.id.seekBar);
 
         muteButton.setOnClickListener(MuteButtonListener);
         seekBar.setOnSeekBarChangeListener(SeekBarChangeListener);

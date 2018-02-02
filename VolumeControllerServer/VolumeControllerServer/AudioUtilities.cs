@@ -10,6 +10,7 @@ namespace VolumeControllerServer
 {
     public static class AudioUtilities
     {
+        private static int currentProcessId = Process.GetCurrentProcess().Id;
         #region Master Volume Manipulation
 
         /// <summary>
@@ -25,8 +26,7 @@ namespace VolumeControllerServer
                 if (masterVol == null)
                     return -1;
 
-                float volumeLevel;
-                masterVol.GetMasterVolumeLevelScalar(out volumeLevel);
+                masterVol.GetMasterVolumeLevelScalar(out float volumeLevel);
                 return volumeLevel * 100;
             }
             finally
@@ -543,10 +543,9 @@ namespace VolumeControllerServer
 
         public static AudioSession GetProcessSession()
         {
-            int id = Process.GetCurrentProcess().Id;
             foreach (AudioSession session in GetAllSessions())
             {
-                if (session.ProcessId == id)
+                if (session.ProcessId == currentProcessId)
                     return session;
 
                 session.Dispose();
